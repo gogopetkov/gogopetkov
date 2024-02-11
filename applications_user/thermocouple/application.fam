@@ -1,0 +1,15 @@
+# For details & more options, see documentation/AppManifests.md in firmware repo
+
+App(
+    appid="thermocouple_mcp9601",  # Must be unique
+    name="Thermocouple",  # Displayed in menus
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="thermocouple_app",
+    stack_size=2 * 1024,
+    fap_category="GPIO",
+    # Optional values
+    fap_version="0.1",
+    fap_icon="thermocouple.png",  # 10x10 1-bit PNG
+    fap_description="uses Adafruit MCP9601",
+    fap_author="Gogo"
+)
