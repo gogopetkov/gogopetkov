@@ -1,0 +1,10 @@
+App(
+    appid="gpio_blink",
+    name="GPIO Blink",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="gpio_blink_main",
+    requires=["gui"],
+    stack_size=1 * 1024,
+    fap_icon="blink_10px.png",
+    fap_category="GPIO",
+)
