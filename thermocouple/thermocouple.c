@@ -17,10 +17,10 @@
 
 
 /* 
- - 3V3 (3V3, pin 9)  = VCC
- - GND (GND, pin 18) = GND
- - SCL (C0, pin 16)  = SCL
- - SDA (C1, pin 15)  = SDA
+ - 3V3 (3V3, pin 9)  = VCC  orange  4
+ - GND (GND, pin 18) = GND  brown   1
+ - SCL (C0, pin 16)  = SCL  orange/white  3
+ - SDA (C1, pin 15)  = SDA  brown/white   2
  */
 
 
@@ -157,7 +157,7 @@ void tcouple_scenes_display_temperature_scene_on_enter(void* context) {
 
     i2c_init_mcp9600(0xC0); 
 
-    uint16_t hj = read_hot_junction_mcp9600(0xC0);
+    uint16_t hj = read_hot_junction_mcp9600(0xC0); // 0xC0
     double tcf = 0.0625 * hj;
     char * tc = malloc(30);
     char * cj = malloc(30);
@@ -175,7 +175,7 @@ void tcouple_scenes_display_temperature_scene_on_enter(void* context) {
     widget_add_string_element(
         app->widget, 10, 45, AlignLeft, AlignCenter, FontPrimary,  tc);
   
-    FURI_LOG_I("thermocouple", "Fdisplay_temperature_scene_on_enter ...");
+    FURI_LOG_I("thermocouple", "display_temperature_scene_on_enter ...");
     view_dispatcher_switch_to_view(app->view_dispatcher, tCoupleScenesWidgetView);
     free(tc);
 }
