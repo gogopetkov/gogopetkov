@@ -35,9 +35,7 @@ bool i2c_init_mcp9600(uint8_t addr) {
 
     // read version number
     buffer[0] = MCP9600_DEVICEID;
-    // if(furi_hal_i2c_trx(&furi_hal_i2c_handle_external, addr, buffer, 1, buffer, 1, 100)) {
-    // (furi_hal_i2c_trx(&furi_hal_i2c_handle_external, addr, buffer, 1, buffer, 1, 100)); {   
-
+ 
     buffer[0] = 0;    
     furi_hal_i2c_tx(&furi_hal_i2c_handle_external, addr, buffer, 1, 100);
     furi_hal_i2c_rx(&furi_hal_i2c_handle_external, addr, buffer, 1, 100);
@@ -49,14 +47,13 @@ bool i2c_init_mcp9600(uint8_t addr) {
         buffer[0] = MCP9600_SENSORCONFIG; 
         buffer[1] = ((0x07 & thermocouple_type) << 4) | (0x07 & thermocouple_filter);
         if(furi_hal_i2c_tx(&furi_hal_i2c_handle_external, addr, buffer, 2, 100)) {
-            FURI_LOG_I("termocouple", " thremocouple config  - OK ");
             /* Device configuration register - MCP9600_DEVICECONFIG 
             Cold-Junction resolution - 0.0625,  ADC Resolution - 18 bits
             Burst Mode Temperature Samples 1,  Burst mode on */
             buffer[0] = MCP9600_DEVICECONFIG; 
             buffer[1] = 0x82;
             if(furi_hal_i2c_tx(&furi_hal_i2c_handle_external, addr, buffer, 2, 100)) {
-                FURI_LOG_I("termocouple", " config ADC resolution, burst mode  - OK ");
+                FURI_LOG_I("termocouple", "Config ADC 18 bits, burst mode  - OK ");
                 result = true;
             }
         }
@@ -69,23 +66,39 @@ bool i2c_init_mcp9600(uint8_t addr) {
     }
 
     furi_hal_i2c_release(&furi_hal_i2c_handle_external);
-    FURI_LOG_I("termocouple", " unsuccessful initialization");
+    FURI_LOG_I("termocouple", "Unsuccessful initialization");
     return result;
 
 }
 
 uint16_t  read_hot_junction_mcp9600(uint8_t addr) {
     
-     uint8_t buffer[2];
+    uint8_t buffer[2];
+    uint8_t rbuffer[2];
+
     furi_hal_i2c_acquire(&furi_hal_i2c_handle_external);
+    
+    // start burst mode 
+    buffer[0] = MCP9600_STATUS; 
+    buffer[1] = 0;  // start burst - clear the 7th bit of the status register
+    furi_hal_i2c_tx(&furi_hal_i2c_handle_external, addr, buffer, 2, 100);
 
-    buffer[0] = MCP9600_HOTJUNCTION; 
-    furi_hal_i2c_tx(&furi_hal_i2c_handle_external, addr, buffer, 1, 100);
-    furi_delay_ms(1000);
-    furi_hal_i2c_rx(&furi_hal_i2c_handle_external, addr, buffer, 2, 100);
+    do
+    {
+        furi_hal_i2c_rx(&furi_hal_i2c_handle_external, addr, rbuffer, 1, 100);   
+        FURI_LOG_I("termocouple", "hot junction data ready = %0x", rbuffer[0] );
+        furi_delay_ms(50);
+    } while (!(rbuffer[0]>>7));
 
-    uint16_t  hj = (buffer[0]*256 + buffer[1]);
-    FURI_LOG_I("termocouple", " hot junction->: %d", hj );
+
+    buffer[0] = MCP9600_HOTJUNCTION;  
+    furi_hal_i2c_trx(&furi_hal_i2c_handle_external,addr, buffer, 1, rbuffer, 2, 1000);
+
+    furi_delay_ms(50);
+     FURI_LOG_I("termocouple", " buffer[0]=%x, rbuffer[1]=%x, rbuffer[0]=%x,  ", buffer[0],rbuffer[1], rbuffer[0]  );
+
+    uint16_t  hj = (rbuffer[0]*256 + rbuffer[1]);
+    FURI_LOG_I("termocouple", "hot junction->: %d", hj );
 
     furi_hal_i2c_release(&furi_hal_i2c_handle_external);
     return hj;
@@ -93,22 +106,44 @@ uint16_t  read_hot_junction_mcp9600(uint8_t addr) {
 }
 
 uint16_t  read_cold_junction_mcp9600(uint8_t addr) {
-    
-    uint8_t buffer[2];
+
+uint8_t buffer[2];
+    uint8_t rbuffer[2];
+
     furi_hal_i2c_acquire(&furi_hal_i2c_handle_external);
+    
+    // start burst mode 
+    // buffer[0] = MCP9600_STATUS; 
+    // buffer[1] = 0;  // start burst - clear the 7th bit of the status register
+    // furi_hal_i2c_tx(&furi_hal_i2c_handle_external, addr, buffer, 2, 100);
+    // furi_delay_ms(500);
+    // do
+    // {
+    //     furi_hal_i2c_rx(&furi_hal_i2c_handle_external, addr, rbuffer, 1, 100);   
+    //     FURI_LOG_I("termocouple", "cold junction data ready = %0x", rbuffer[0] );
+    //     furi_delay_ms(500);
+    // } while (!(rbuffer[0]>>7));
+
 
     buffer[0] = MCP9600_COLDJUNCTION; 
-    furi_hal_i2c_tx(&furi_hal_i2c_handle_external, addr, buffer, 1, 100);
-    furi_delay_ms(1000);
-    furi_hal_i2c_rx(&furi_hal_i2c_handle_external, addr, buffer, 2, 100);
+    furi_hal_i2c_trx(&furi_hal_i2c_handle_external,addr, buffer, 1, rbuffer, 2, 1000);
 
-    uint16_t  hj = (buffer[0]*256 + buffer[1]);
-    FURI_LOG_I("termocouple", " cold junction->: %d", hj );
+    furi_delay_ms(50);
+     FURI_LOG_I("termocouple", " buffer[0]=%x, rbuffer[1]=%x, rbuffer[0]=%x,  ", buffer[0],rbuffer[1], rbuffer[0]  );
+
+    uint16_t  hj = (rbuffer[0]*256 + rbuffer[1]);
+    FURI_LOG_I("termocouple", "cold junction->: %d", hj );
 
     furi_hal_i2c_release(&furi_hal_i2c_handle_external);
     return hj;
 
-}
+
+
+
+
+
+ }
+
 
 
 
